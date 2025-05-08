@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Textured Solar System with Lighting</title>
+  <style>
+    body { margin: 0; overflow: hidden; }
+    canvas { display: block; }
+    #controls {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      z-index: 1;
+    }
+    button {
+      font-size: 16px;
+      margin: 5px;
+    }
+  </style>
+  <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+</head>
+<body>
+
+<div id="controls">
+  <button id="grow">Grow Planets</button>
+  <button id="shrink">Shrink Planets</button>
+  <button id="faster">Speed Up Orbits</button>
+  <button id="slower">Slow Down Orbits</button>
+  <button id="reset">Reset</button>
+</div>
+
+<script>
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  const renderer = new THREE.WebGLRenderer();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  document.body.appendChild(renderer.domElement);
+
+  // Lighting
+  const pointLight = new THREE.PointLight(0xffffff, 2, 100);
+  pointLight.position.set(0, 0, 0); // center (sun)
+  scene.add(pointLight);
+
+  const ambientLight = new THREE.AmbientLight(0x404040, 1.5); // soft fill light
+  scene.add(ambientLight);
+
+  // Sun
+  const sunGeometry = new THREE.SphereGeometry(2, 32, 32);
+  const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+  const sun = new THREE.Mesh(sunGeometry, sunMaterial);
+  scene.add(sun);
+
+  // Texture loader and paths
+  const texturePaths = ['mercury.jpg', 'earth.jpg', 'mars.jpg', 'jupiter.jpg'];
+  const textureLoader = new THREE.TextureLoader();
+  const planetTextures = texturePaths.map(path => textureLoader.load(path));
+
+  // Planets
+  const planets = [];
+  const orbitRadius = [6, 10, 14, 18];
+
+  orbitRadius.forEach((r, i) => {
+    const geometry = new THREE.SphereGeometry(0.6, 32, 32);
+    const material = new THREE.MeshStandardMaterial({
+      map: planetTextures[i],
+      metalness: 0.4,
+      roughness: 1.0
+    });
+
+    const planet = new THREE.Mesh(geometry, material);
+    planet.userData = {
+      angle: Math.random() * Math.PI * 2,
+      radius: r,
+      speed: 0.005 + 0.005 * i,
+      baseSpeed: 0.005 + 0.005 * i,
+      baseScale: 0.6
+    };
+
+    scene.add(planet);
+    planets.push(planet);
+  });
+
+  camera.position.z = 35;
+
+  function animate() {
+    requestAnimationFrame(animate);
+    planets.forEach(planet => {
+      planet.userData.angle += planet.userData.speed;
+      planet.position.x = Math.cos(planet.userData.angle) * planet.userData.radius;
+      planet.position.z = Math.sin(planet.userData.angle) * planet.userData.radius;
+    });
+    renderer.render(scene, camera);
+  }
+
+  animate();
+
+  // Buttons
+  document.getElementById("grow").addEventListener("click", () => {
+    planets.forEach(p => p.scale.multiplyScalar(1.5));
+  });
+
+  document.getElementById("shrink").addEventListener("click", () => {
+    planets.forEach(p => p.scale.multiplyScalar(0.67));
+  });
+
+  document.getElementById("faster").addEventListener("click", () => {
+    planets.forEach(p => p.userData.speed *= 1.5);
+  });
+
+  document.getElementById("slower").addEventListener("click", () => {
+    planets.forEach(p => p.userData.speed *= 0.67);
+  });
+
+  document.getElementById("reset").addEventListener("click", () => {
+    planets.forEach(p => {
+      p.userData.speed = p.userData.baseSpeed;
+      p.scale.set(1, 1, 1);
+    });
+  });
+</script>
+
+</body>
+</html>
